@@ -25,6 +25,9 @@ object DBUtils : IDBUtils {
         MediaStore.Images.ImageColumns.LONGITUDE,
         MediaStore.Images.ImageColumns.LATITUDE
     )
+    private val dateKeys = arrayOf(
+        "IFNULL(${MediaStore.MediaColumns.DATE_TAKEN}, ${MediaStore.MediaColumns.DATE_ADDED})"
+    )
 
     override fun getAssetPathList(
         context: Context,
@@ -154,7 +157,7 @@ object DBUtils : IDBUtils {
         val dateSelection = getDateCond(args, option)
         val sizeWhere = sizeWhere(requestType, option)
         val keys =
-            (IDBUtils.storeImageKeys + IDBUtils.storeVideoKeys + IDBUtils.typeKeys + locationKeys).distinct().toTypedArray()
+            (IDBUtils.storeImageKeys + IDBUtils.storeVideoKeys + IDBUtils.typeKeys + locationKeys + dateKeys).distinct().toTypedArray()
         val selection = if (isAll) {
             "${MediaStore.MediaColumns.BUCKET_ID} IS NOT NULL $typeSelection $dateSelection $sizeWhere"
         } else {

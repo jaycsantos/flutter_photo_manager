@@ -158,8 +158,8 @@ interface IDBUtils {
         }
 
         val id = getString(MediaStore.MediaColumns._ID)
-        var date = if (isAndroidQ) getLong(MediaStore.MediaColumns.DATE_TAKEN)
-        else getLong(MediaStore.MediaColumns.DATE_ADDED)
+        // var date = if (isAndroidQ) getLong(MediaStore.MediaColumns.DATE_TAKEN)
+        var date = getLong(MediaStore.MediaColumns.DATE_TAKEN)
         if (date == 0L) {
             date = getLong(MediaStore.MediaColumns.DATE_ADDED)
         } else {
@@ -384,11 +384,18 @@ interface IDBUtils {
     ): List<AssetPathEntity>
 
     fun getDateCond(args: ArrayList<String>, option: FilterOption): String {
-        val createDateCond =
-            addDateCond(args, option.createDateCond, MediaStore.Images.Media.DATE_ADDED)
-        val updateDateCond =
-            addDateCond(args, option.updateDateCond, MediaStore.Images.Media.DATE_MODIFIED)
-        return "$createDateCond $updateDateCond"
+        var createCond = ""
+        if(!option.createDateCond.ignore) {
+            val takenCond = addDateCond(args, option.createDateCond, MediaStore.Images.Media.DATE_TAKEN)
+            val addedCond = addDateCond(args, option.createDateCond, MediaStore.Images.Media.DATE_ADDED)
+            createCond = "AND ( $takenCond OR $addedCond )"
+        }
+        var updateCond = ""
+        if(!option.updateDateCond.ignore) {
+            updateCond = "AND "+ addDateCond(args, option.updateDateCond, MediaStore.Images.Media.DATE_MODIFIED)
+        }
+
+        return "$createCond $updateCond"
     }
 
     private fun addDateCond(args: ArrayList<String>, dateCond: DateCond, dbKey: String): String {
@@ -399,7 +406,7 @@ interface IDBUtils {
         val minMs = dateCond.minMs
         val maxMs = dateCond.maxMs
 
-        val dateSelection = "AND ( $dbKey >= ? AND $dbKey <= ? )"
+        val dateSelection = "( $dbKey >= ? AND $dbKey <= ? )"
         args.add((minMs / 1000).toString())
         args.add((maxMs / 1000).toString())
 
