@@ -385,13 +385,16 @@ interface IDBUtils {
 
     fun getDateCond(args: ArrayList<String>, option: FilterOption): String {
         var createCond = ""
-        if(!option.createDateCond.ignore) {
-            val takenCond = addDateCond(args, option.createDateCond, MediaStore.Images.Media.DATE_TAKEN)
-            val addedCond = addDateCond(args, option.createDateCond, MediaStore.Images.Media.DATE_ADDED)
-            createCond = "AND ( $takenCond OR $addedCond )"
+        if (!option.createDateCond.ignore) {
+            val dc = DateCond(option.createDateCond.minMs * 1000, option.createDateCond.maxMs * 1000, option.createDateCond.ignore)
+            val cond1 = "${MediaStore.Images.Media.DATE_TAKEN} IS NOT NULL AND "+ 
+                addDateCond(args, dc, MediaStore.Images.Media.DATE_TAKEN)
+            val cond2 = "${MediaStore.Images.Media.DATE_TAKEN} IS NULL AND "+
+                addDateCond(args, option.createDateCond, MediaStore.Images.Media.DATE_ADDED)
+            createCond = "AND (( $cond1 ) OR ( $cond2 ))"
         }
         var updateCond = ""
-        if(!option.updateDateCond.ignore) {
+        if (!option.updateDateCond.ignore) {
             updateCond = "AND "+ addDateCond(args, option.updateDateCond, MediaStore.Images.Media.DATE_MODIFIED)
         }
 
@@ -406,7 +409,7 @@ interface IDBUtils {
         val minMs = dateCond.minMs
         val maxMs = dateCond.maxMs
 
-        val dateSelection = "( $dbKey >= ? AND $dbKey <= ? )"
+        val dateSelection = "( $dbKey BETWEEN ? AND ? )"
         args.add((minMs / 1000).toString())
         args.add((maxMs / 1000).toString())
 

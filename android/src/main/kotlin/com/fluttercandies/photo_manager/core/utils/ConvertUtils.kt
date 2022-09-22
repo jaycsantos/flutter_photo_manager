@@ -112,7 +112,7 @@ object ConvertUtils {
             val keyIndex = map["type"] as Int
             val asc = map["asc"] as Boolean
             val key = when (keyIndex) {
-                0 -> "IFNULL(${MediaStore.MediaColumns.DATE_TAKEN}, ${MediaStore.MediaColumns.DATE_ADDED})"
+                0 -> "(CASE WHEN ${MediaStore.MediaColumns.DATE_TAKEN} IS NOT NULL THEN ${MediaStore.MediaColumns.DATE_TAKEN}/1000 ELSE ${MediaStore.MediaColumns.DATE_ADDED} END)"
                 // 0 -> MediaStore.MediaColumns.DATE_ADDED
                 1 -> MediaStore.MediaColumns.DATE_MODIFIED
                 else -> null
