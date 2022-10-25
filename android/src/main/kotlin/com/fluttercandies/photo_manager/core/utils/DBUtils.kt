@@ -349,6 +349,11 @@ object DBUtils : IDBUtils {
         desc: String,
         relativePath: String?
     ): AssetEntity? {
+        val dup = getAssetEntityFromPath(context, path, checkIfExists = false)
+        if( dup != null ) {
+            return dup
+        }
+
         val cr = context.contentResolver
         val file = File(path)
         var inputStream = FileInputStream(file)
@@ -372,6 +377,8 @@ object DBUtils : IDBUtils {
         } catch (e: Exception) {
             Pair(0, 0)
         }
+        val rotationDegrees = inputStream.getOrientationDegrees()
+        refreshInputStream()
         val timestamp = System.currentTimeMillis() / 1000
 
         val typeFromStream = URLConnection.guessContentTypeFromStream(inputStream)
@@ -397,6 +404,7 @@ object DBUtils : IDBUtils {
             put(MediaStore.Images.ImageColumns.LONGITUDE, latLong[1])
             put(MediaStore.MediaColumns.WIDTH, width)
             put(MediaStore.MediaColumns.HEIGHT, height)
+            put(MediaStore.MediaColumns.ORIENTATION, rotationDegrees)
             if (savePath) {
                 put(MediaStore.MediaColumns.DATA, path)
             }
@@ -426,6 +434,28 @@ object DBUtils : IDBUtils {
         }
         cr.notifyChange(contentUri, null)
         return assetEntity
+    }
+
+    private fun getAssetEntityFromPath(context: Context, path: String, checkIfExists: Boolean): AssetEntity? {
+        val keys =
+            (IDBUtils.storeImageKeys + IDBUtils.storeVideoKeys + locationKeys + IDBUtils.typeKeys).distinct().toTypedArray()
+        val selection = "${MediaStore.MediaColumns.DATA} = ?"
+        val args = arrayOf(File(path).absolutePath)
+
+        val cursor = context.contentResolver.query(
+            allUri,
+            keys,
+            selection,
+            args,
+            null
+        ) ?: return null
+        cursor.use {
+            return if (it.moveToNext()) {
+                it.toAssetEntity(context, checkIfExists)
+            } else {
+                null
+            }
+        }
     }
 
     override fun copyToGallery(context: Context, assetId: String, galleryId: String): AssetEntity? {

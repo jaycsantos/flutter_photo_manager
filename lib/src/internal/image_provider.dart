@@ -110,7 +110,7 @@ class AssetEntityImageProvider extends ImageProvider<AssetEntityImageProvider> {
         } else if (type == ImageFileType.heic) {
           data = await (await key.entity.file)?.readAsBytes();
         } else {
-          data = await key.entity.originBytes;
+          data = await (await key.entity.file)?.readAsBytes();
         }
       } else {
         data = await key.entity.thumbnailDataWithOption(

@@ -384,8 +384,12 @@ interface IDBUtils {
     ): List<AssetPathEntity>
 
     fun getDateCond(args: ArrayList<String>, option: FilterOption): String {
+        // val createCond = addDateCond(args, option.createDateCond, "(CASE WHEN ${MediaStore.Images.Media.DATE_TAKEN} IS NOT NULL THEN ${MediaStore.Images.Media.DATE_TAKEN}/1000 ELSE ${MediaStore.Images.Media.DATE_ADDED} END)")
+        // val createCond = addDateCond(args, option.createDateCond, "date_added")
+        // val createCond = addDateCond(args, option.createDateCond, "${MediaStore.Images.Media.DATE_ADDED}")
         var createCond = ""
         if (!option.createDateCond.ignore) {
+            // createCond = "AND "+ addDateCond(args, option.createDateCond, MediaStore.Images.Media.DATE_ADDED)
             val dc = DateCond(option.createDateCond.minMs * 1000, option.createDateCond.maxMs * 1000, option.createDateCond.ignore)
             val cond1 = "${MediaStore.Images.Media.DATE_TAKEN} IS NOT NULL AND "+ 
                 addDateCond(args, dc, MediaStore.Images.Media.DATE_TAKEN)
@@ -409,6 +413,7 @@ interface IDBUtils {
         val minMs = dateCond.minMs
         val maxMs = dateCond.maxMs
 
+        // val dateSelection = "( $dbKey >= ? AND $dbKey <= ? )"
         val dateSelection = "( $dbKey BETWEEN ? AND ? )"
         args.add((minMs / 1000).toString())
         args.add((maxMs / 1000).toString())

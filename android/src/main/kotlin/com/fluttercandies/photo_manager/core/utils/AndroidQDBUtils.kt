@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.graphics.BitmapFactory
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.provider.BaseColumns
@@ -351,7 +352,7 @@ object AndroidQDBUtils : IDBUtils {
             put(MediaStore.MediaColumns.DISPLAY_NAME, title)
             put(MediaStore.MediaColumns.MIME_TYPE, typeFromStream)
             put(MediaStore.MediaColumns.TITLE, title)
-            put(MediaStore.MediaColumns.DATE_ADDED, timestamp)
+            // put(MediaStore.MediaColumns.DATE_ADDED, timestamp)
             put(MediaStore.MediaColumns.DATE_MODIFIED, timestamp)
             put(MediaStore.MediaColumns.DATE_TAKEN, timestamp * 1000)
             put(MediaStore.MediaColumns.WIDTH, width)
@@ -380,6 +381,9 @@ object AndroidQDBUtils : IDBUtils {
         desc: String,
         relativePath: String?
     ): AssetEntity? {
+        var dup = getAssetEntityFromPath(context, path, checkIfExists = false)
+        if (dup != null) return dup;
+
         path.checkDirs()
         val cr = context.contentResolver
         val timestamp = System.currentTimeMillis() / 1000
@@ -405,7 +409,7 @@ object AndroidQDBUtils : IDBUtils {
             put(MediaStore.MediaColumns.TITLE, title)
             put(MediaStore.MediaColumns.DATE_ADDED, timestamp)
             put(MediaStore.MediaColumns.DATE_MODIFIED, timestamp)
-            put(MediaStore.MediaColumns.DATE_TAKEN, timestamp * 1000)
+            // put(MediaStore.MediaColumns.DATE_TAKEN, timestamp * 1000)
             put(MediaStore.MediaColumns.DISPLAY_NAME, title)
             put(MediaStore.MediaColumns.WIDTH, width)
             put(MediaStore.MediaColumns.HEIGHT, height)
@@ -421,8 +425,27 @@ object AndroidQDBUtils : IDBUtils {
         outputStream?.use { os -> inputStream.use { it.copyTo(os) } }
         cr.notifyChange(contentUri, null)
 
+        MediaScannerConnection.scanFile(context, arrayOf(path), arrayOf(typeFromStream), null)
+
         val id = ContentUris.parseId(contentUri)
         return getAssetEntity(context, id.toString())
+    }
+
+    private fun getAssetEntityFromPath(context: Context, path: String, checkIfExists: Boolean): AssetEntity? {
+        val keys = assetKeys().distinct().toTypedArray()
+        val selection = "${MediaStore.MediaColumns.DATA} = ?"
+        val args = arrayOf(path)
+        val cursor = context.contentResolver.query(
+            allUri,
+            keys,
+            selection,
+            args,
+            null
+        ) ?: return null
+        cursor.use {
+            return if (it.moveToNext()) it.toAssetEntity(context, checkIfExists)
+            else null
+        }
     }
 
     override fun copyToGallery(context: Context, assetId: String, galleryId: String): AssetEntity? {
