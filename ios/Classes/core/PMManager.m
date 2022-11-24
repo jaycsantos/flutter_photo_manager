@@ -332,7 +332,7 @@
     entity.lng = asset.location.coordinate.longitude;
     entity.title = needTitle ? [asset title] : @"";
     entity.favorite = asset.isFavorite;
-    entity.subtype = asset.unwrappedSubtype;
+    entity.subtype = asset.mediaSubtypes;
     
     return entity;
 }
@@ -594,6 +594,17 @@
                 return;
             }
             NSError *error;
+            NSString *destinationPath = destination.path;
+            if ([manager fileExistsAtPath:destinationPath]) {
+                [[PMLogUtils sharedInstance] info:[NSString stringWithFormat:@"Reading cache from %@", destinationPath]];
+                if (withScheme) {
+                    [handler reply:destination.absoluteString];
+                } else {
+                    [handler reply:destinationPath];
+                }
+                return;
+            }
+            [[PMLogUtils sharedInstance] info:[NSString stringWithFormat:@"Caching the video to %@", destination]];
             [[NSFileManager defaultManager] copyItemAtURL:videoURL
                                                     toURL:destination
                                                     error:&error];
@@ -1068,6 +1079,36 @@
         PHAssetResourceCreationOptions *options = [PHAssetResourceCreationOptions new];
         [options setOriginalFilename:title];
         [request addResourceWithType:PHAssetResourceTypeVideo fileURL:fileURL options:options];
+        assetId = request.placeholderForCreatedAsset.localIdentifier;
+    }
+     completionHandler:^(BOOL success, NSError *error) {
+        if (success) {
+            [PMLogUtils.sharedInstance info: [NSString stringWithFormat:@"create asset : id = %@", assetId]];
+            block([self getAssetEntity:assetId]);
+        } else {
+            NSLog(@"create fail, error: %@", error);
+            block(nil);
+        }
+    }];
+}
+
+- (void)saveLivePhoto:(NSString *)imagePath
+            videoPath:(NSString *)videoPath
+            title:(NSString *)title
+            desc:(NSString *)desc
+            block:(AssetResult)block {
+    [PMLogUtils.sharedInstance info:[NSString stringWithFormat:@"save LivePhoto with imagePath: %@, videoPath: %@, title: %@, desc %@",
+                                     imagePath, videoPath, title, desc]];
+    NSURL *videoURL = [NSURL fileURLWithPath:videoPath];
+    NSURL *imageURL = [NSURL fileURLWithPath:imagePath];
+    __block NSString *assetId = nil;
+    [[PHPhotoLibrary sharedPhotoLibrary]
+     performChanges:^{
+        PHAssetCreationRequest *request = [PHAssetCreationRequest creationRequestForAsset];
+        PHAssetResourceCreationOptions *options = [PHAssetResourceCreationOptions new];
+        [options setOriginalFilename:title];
+        [request addResourceWithType:PHAssetResourceTypePhoto fileURL:imageURL options:options];
+        [request addResourceWithType:PHAssetResourceTypePairedVideo fileURL:videoURL options:options];
         assetId = request.placeholderForCreatedAsset.localIdentifier;
     }
      completionHandler:^(BOOL success, NSError *error) {

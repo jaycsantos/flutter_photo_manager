@@ -144,16 +144,18 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
                 Log.d('isLocallyAvailable: $r');
               }),
             ),
-            ElevatedButton(
-              child: const Text('getMediaUrl'),
-              onPressed: () async {
-                final Stopwatch watch = Stopwatch()..start();
-                final String? url = await entity.getMediaUrl();
-                watch.stop();
-                Log.d('Media URL: $url');
-                Log.d(watch.elapsed);
-              },
-            ),
+            if (entity.type == AssetType.video ||
+                entity.type == AssetType.audio)
+              ElevatedButton(
+                child: const Text('getMediaUrl'),
+                onPressed: () async {
+                  final Stopwatch watch = Stopwatch()..start();
+                  final String? url = await entity.getMediaUrl();
+                  watch.stop();
+                  Log.d('Media URL: $url');
+                  Log.d(watch.elapsed);
+                },
+              ),
             ElevatedButton(
               child: const Text('Show detail page'),
               onPressed: () => routeToDetailPage(entity),
@@ -193,7 +195,7 @@ class _GalleryContentListPageState extends State<GalleryContentListPage> {
                 onPressed: () async {
                   final bool isFavorite = entity.isFavorite;
                   print('Current isFavorite: $isFavorite');
-                  await PhotoManager.editor.iOS.favoriteAsset(
+                  await PhotoManager.editor.darwin.favoriteAsset(
                     entity: entity,
                     favorite: !isFavorite,
                   );

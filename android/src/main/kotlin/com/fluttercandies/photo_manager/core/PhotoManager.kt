@@ -93,10 +93,9 @@ class PhotoManager(private val context: Context) {
                 resultHandler.replyError("The asset not found!")
                 return
             }
-            val uri = asset.getUri()
             ThumbnailUtil.getThumbnail(
                 context,
-                uri,
+                asset,
                 option.width,
                 option.height,
                 format,
@@ -125,11 +124,6 @@ class PhotoManager(private val context: Context) {
             resultHandler.replyError("202", "get originBytes error", e)
         }
     }
-
-    fun clearCache() {
-        dbUtils.clearCache()
-    }
-
 
     fun clearFileCache() {
         ThumbnailUtil.clearCache(context)
@@ -209,7 +203,7 @@ class PhotoManager(private val context: Context) {
         }
     }
 
-    fun getMediaUri(id: String, type: Int): String {
+    fun getMediaUri(id: Long, type: Int): String {
         return dbUtils.getMediaUri(context, id, type)
     }
 
